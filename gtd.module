@@ -1,0 +1,55 @@
+<?php
+
+/**
+ * Implementation of hook_voipscript_get_script_names().
+ */
+function gtd_voipscript_get_script_names() {
+  return array(
+    'getthedoor',
+  );
+}
+
+function gtd_voipscript_load_script($script_name, $params = NULL) {
+  if ($script_name == 'getthedoor') {
+    $script = new VoipScript($script_name);
+
+    $base = url(drupal_get_path('module', 'gtd'), array('absolute' => TRUE)) . '/audio';
+
+    $num = "$base/DTMF%20Tones/Dtmf-9.wav";
+
+    $script->addLabel('code');
+    $script->addGetInput('Please enter your access code, followed by the pound sign. Or, wait to be connected.', 10, '#', 3);
+
+    $script->addSet('check_zero', '^gtd_check_oper(%input_digits)');
+    $script->addGotoIf('zero', '^gtd_check_oper(%input_digits)');
+
+    $script->addSet('check_code', '^gtd_check_code(%input_digits)');
+
+    $script->addGotoIf('success', '%check_code');
+
+    // Fail
+    $script->addSay('Sorry, that code was incorrect.');
+    $script->addGoto('code');
+
+    $script->addLabel('success');
+    $script->addSay('Code accepted. Thanks!');
+    $script->addSay($num);
+    $script->addHangup();
+
+    // Dial
+    $script->addLabel('zero');
+    $script->addDial(variable_get('gtd_phone'));
+    $script->addHangup();
+
+   return $script;
+  }
+}
+
+
+function gtd_check_code($code) {
+  return ($code == variable_get('gtd_code'));
+}
+
+function gtd_check_oper($code) {
+  return empty($code);
+}
