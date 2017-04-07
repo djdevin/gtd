@@ -1,2 +1,2 @@
 core = 7.x
-dependencies[] = voipdrupal
+dependencies[] = voip
